@@ -32,7 +32,7 @@ io.on('connection',(socket)=>{
 });
 // app.set('view engine', 'html');
 // to serve the static files html, css files, images
-app.use(express.static(publicPath))s
+app.use(express.static(publicPath))
 
 console.log(publicPath);
 
