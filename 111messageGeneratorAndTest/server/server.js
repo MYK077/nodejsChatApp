@@ -2,7 +2,7 @@
 const path = require('path');
 const express = require('express');
 const app = express();
-
+var {generateMessage} = require('./utils/message');
 // to use the http server and client one must require http
 const http = require('http');
 // Socket.IO enables real-time bidirectional event-based communication.
@@ -26,46 +26,17 @@ var io = socketIO(server)
 io.on('connection',(socket)=>{
   console.log("new user connected");
 
-//since this is not a listener we donot want to specify a callback function but we would specify the data
-// as we are emmiting an event here
-  socket.emit('newEmail',{
-    from:'myk@example.com',
-    text:'hey techie ninja wats up',
-    createdAt:123
-  });
+//calling generateMessage function from message.js
+  socket.emit('newMessage',generateMessage('Admin','welcome to the chat app'));
 
-  socket.on('createEmail',(email)=>{
-    console.log('createEmail',email);
-  })
-// emiting new message event
-  socket.emit('newMessage',{
-    from:'AD',
-    text:'hey wats up myk',
-    createdAt:Date()
-  });
-
-  socket.emit('newMessage',{
-    from:'Admin',
-    text:'welcome to chat app',
-    createdAt:new Date().getTime()
-  });
-
-  socket.broadcast.emit('newMessage',{
-    from:'Admin',
-    text:'new user joined',
-    createdAt:new Date().getTime()
-  });
+  socket.broadcast.emit('newMessage',generateMessage('Admin','new user joined'));
 
 // listening new message event emitted from client
   socket.on('createMessage',(message)=>{
-    console.log('createMessage',message);
+
 // //io.emit is used to emit or broadcast the message to all the users, while socket.emit is used to broadcast it to a single
 // //user, here every single user(including the user sending the message) will get the message from the current sending it.
-//   io.emit('newMessage',{
-//     from:message.from,
-//     text:message.text,
-//     createdAt:new Date().getTime()
-//   });
+  io.emit('newMessage',generateMessage(message.from,message.text));
 //socket.broadcast.emit will send the message to all the connected users excluding the one who is seding it
   // socket.broadcast.emit('newMessage',{
   //   from:message.from,
