@@ -2,7 +2,7 @@
 const path = require('path');
 const express = require('express');
 const app = express();
-var {generateMessage} = require('./utils/message');
+var {generateMessage,generateLocationMessage} = require('./utils/message');
 // to use the http server and client one must require http
 const http = require('http');
 // Socket.IO enables real-time bidirectional event-based communication.
@@ -10,7 +10,7 @@ const http = require('http');
 // Socket.io enables two way communication between the web server and the client i.e data will flow seamlessly
 // from server to the browser and browser to the server
 const socketIO = require('socket.io');
-var publicPath = path.join(__dirname,'/../public')
+var publicPath = path.join(__dirname,'/../public');
 
 // process.env.port is for heroku
 const port = process.env.PORT || 3000;
@@ -38,12 +38,11 @@ io.on('connection',(socket)=>{
 // //user, here every single user(including the user sending the message) will get the message from the current sending it.
   io.emit('newMessage',generateMessage(message.from,message.text));
   callback('from server to the client!');
-//socket.broadcast.emit will send the message to all the connected users excluding the one who is seding it
-  // socket.broadcast.emit('newMessage',{
-  //   from:message.from,
-  //   text:message.text,
-  //   createAt:new Date().getTime()
-  // });
+
+  socket.on('createLocationMessage',(coordinate)=>{
+    io.emit('newLocationMessage',generateLocationMessage('User',coordinate.latitude , coordinate.longitude));
+  });
+
 
 });
 
