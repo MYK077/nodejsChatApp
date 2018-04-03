@@ -4,6 +4,10 @@ const express = require('express');
 const app = express();
 var {generateMessage,generateLocationMessage} = require('./utils/message');
 const {isRealString} = require('./utils/validation');
+// pulling of the users property  which we exported from users.js
+const {Users} =   require('./utils/users');
+var users = new Users();
+
 // to use the http server and client one must require http
 const http = require('http');
 // Socket.IO enables real-time bidirectional event-based communication.
@@ -19,7 +23,7 @@ const port = process.env.PORT || 3000;
 const server = http.createServer(app);
 //now we want to configure the server to use socketIO
 // we get back websocket server IO
-var io = socketIO(server)
+var io = socketIO(server);
 
 // io.on lets us register an event listener and so something when that event happens
 // here we are using an event 'connection' that listen for a new connection and let us do something when that connection
@@ -29,7 +33,7 @@ io.on('connection',(socket)=>{
 
   socket.on('join',(params,callback)=>{
     if(!isRealString(params.name) || !isRealString(params.room)){
-      callback('name and room name are required')
+      return callback('name and room name are required')
     }
 
     socket.join(params.room);
@@ -64,6 +68,9 @@ socket.on('createLocationMessage',(coordinate)=>{
   });
 });
 
+  socket.emit('updateUsersList',function(users){
+    console.log('User list', users);
+  })
 // to serve the static files html, css files, images
 app.use(express.static(publicPath));
 

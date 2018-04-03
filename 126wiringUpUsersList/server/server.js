@@ -4,6 +4,10 @@ const express = require('express');
 const app = express();
 var {generateMessage,generateLocationMessage} = require('./utils/message');
 const {isRealString} = require('./utils/validation');
+// pulling of the users property  which we exported from users.js
+const {Users} =   require('./utils/users');
+var users = new Users();
+
 // to use the http server and client one must require http
 const http = require('http');
 // Socket.IO enables real-time bidirectional event-based communication.
@@ -19,8 +23,9 @@ const port = process.env.PORT || 3000;
 const server = http.createServer(app);
 //now we want to configure the server to use socketIO
 // we get back websocket server IO
-var io = socketIO(server)
+var io = socketIO(server);
 
+app.use(express.static(publicPath));
 // io.on lets us register an event listener and so something when that event happens
 // here we are using an event 'connection' that listen for a new connection and let us do something when that connection
 // happens,io.on on method used for connection event , would not be usually used or called for other events
@@ -29,7 +34,7 @@ io.on('connection',(socket)=>{
 
   socket.on('join',(params,callback)=>{
     if(!isRealString(params.name) || !isRealString(params.room)){
-      callback('name and room name are required')
+      return callback('name and room name are required')
     }
 
     socket.join(params.room);
@@ -39,6 +44,14 @@ io.on('connection',(socket)=>{
     // socket.broadcast.emit-->socket.broadcast.to('the office fans')
     // socket.emit
     //calling generateMessage function from message.js
+
+    // removes user and returns it
+    users.removeUser(socket.id);
+    // add a user
+    users.addUser(socket.id, params.name, params.room);
+
+    io.to(params.room).emit('updateUserList',users.getUserList(params.room));
+
     socket.emit('newMessage',generateMessage('Admin','welcome to the chat app'));
 
     socket.broadcast.to(params.room).emit('newMessage',generateMessage('Admin',`${params.name} has joined`));
@@ -52,22 +65,22 @@ io.on('connection',(socket)=>{
 // //io.emit is used to emit or broadcast the message to all the users, while socket.emit is used to broadcast it to a single
 // //user, here every single user(including the user sending the message) will get the message from the current sending it.
   io.emit('newMessage',generateMessage(message.from,message.text));
-  callback();
+    callback();
 });
 
-socket.on('createLocationMessage',(coordinate)=>{
-  io.emit('newLocationMessage',generateLocationMessage('User',coordinate.latitude , coordinate.longitude));
+  socket.on('createLocationMessage',(coordinate)=>{
+    io.emit('newLocationMessage',generateLocationMessage('User',coordinate.latitude , coordinate.longitude));
 });
 
-  socket.on('disconnect',(socket)=>{
-    console.log("user disconnected");
+  socket.on('disconnect',()=>{
+    var user = users.removeUser(socket.id);
+
+    if (user){
+      io.to(user.room).emit('updateUserList',users.getUserList(user.room));
+      io.to(user.room).emit('newMessage',generateMessage('Admin',`${user.name} has left.`));
+    }
   });
 });
-
-// to serve the static files html, css files, images
-app.use(express.static(publicPath));
-
-console.log(publicPath);
 
 server.listen(port,()=>{
   console.log('server is up and running');
